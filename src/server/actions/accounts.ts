@@ -18,13 +18,13 @@ export async function createAccountAction(input: unknown) {
   const account = await prisma.account.create({
     data: { ...data, userId: user.id, balanceMinor: Math.round(data.balanceMinor) },
   });
-  revalidateTag("accounts");
+  revalidateTag("accounts", "default");
   return { ok: true as const, account };
 }
 
 export async function deleteAccountAction(id: string) {
   const user = await getCurrentUser();
   await prisma.account.deleteMany({ where: { id, userId: user.id } });
-  revalidateTag("accounts");
+  revalidateTag("accounts", "default");
   return { ok: true as const };
 }
