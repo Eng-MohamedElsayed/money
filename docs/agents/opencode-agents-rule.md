@@ -1,0 +1,1 @@
+Dependency installs can corrupt; tests/tsc are the source of truth for the domain layer.

@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Bucket {
+  GROWTH
+  STABILITY
+  ESSENTIALS
+  REWARDS
+  UNCLASSIFIED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionFlow {
+  IN
+  OUT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  incomes       Income[]
+  profiles      MoneyRuleProfile[]
+  stabilityFund StabilityFund?
+  periods       BudgetPeriod[]
+
+  @@map("users")
+}
+
+model Account {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         AccountType @default(BANK)
+  currency     String      @default("EGP")
+  balanceMinor Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  transactions     Transaction[]
+  budgetsIn        BudgetPeriod[]
+  transferAccounts Transaction[]  @relation("TransferTo")
+  stabilityFund    StabilityFund?
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+enum AccountType {
+  CASH
+  BANK
+  SAVINGS
+  EMERGENCY
+  INVESTMENT
+  WALLET
+  OTHER
+}
+
+model Category {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  defaultBucket Bucket   @default(UNCLASSIFIED)
+  isSystem      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Transaction {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId         String
+  account           Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  type              TransactionType
+  flow              TransactionFlow @default(OUT)
+  amountMinor       Int
+  currency          String          @default("EGP")
+  date              DateTime
+  description       String?
+  merchant          String?
+  note              String?
+  categoryId        String?
+  category          Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bucket            Bucket          @default(UNCLASSIFIED)
+  transferAccountId String?
+  transferAccount   Account?        @relation("TransferTo", fields: [transferAccountId], references: [id], onDelete: Restrict)
+  incomeId          String?         @unique
+  income            Income?         @relation(fields: [incomeId], references: [id], onDelete: SetNull)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, categoryId])
+  @@index([userId, bucket])
+  @@index([userId, accountId])
+  @@index([userId, type])
+}
+
+model BudgetPeriod {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month     Int
+  year      Int
+  accountId String?  @unique
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incomes    Income[]
+  allocation BudgetAllocation?
+
+  @@unique([userId, month, year])
+  @@index([userId, year, month])
+}
+
+model Income {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountMinor Int
+  currency    String        @default("EGP")
+  source      String
+  periodId    String?
+  period      BudgetPeriod? @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  date        DateTime      @default(now())
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  transactions Transaction[]
+
+  @@index([userId, date])
+  @@index([userId, periodId])
+}
+
+model MoneyRuleProfile {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String   @default("Money Rule")
+  growthPercent     Int      @default(25)
+  stabilityPercent  Int      @default(15)
+  essentialsPercent Int      @default(50)
+  rewardsPercent    Int      @default(10)
+  currency          String   @default("EGP")
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  allocations BudgetAllocation[]
+
+  @@index([userId, isActive])
+}
+
+model BudgetAllocation {
+  id              String            @id @default(cuid())
+  periodId        String            @unique
+  period          BudgetPeriod      @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  profileId       String?
+  profile         MoneyRuleProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  growthMinor     Int
+  stabilityMinor  Int
+  essentialsMinor Int
+  rewardsMinor    Int
+  totalMinor      Int
+  currency        String            @default("EGP")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([profileId])
+}
+
+model StabilityFund {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId     String?  @unique
+  account       Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  goalMultiple  Int      @default(5)
+  baselineMinor Int      @default(0)
+  targetMinor   Int      @default(0)
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
