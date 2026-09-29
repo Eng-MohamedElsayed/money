@@ -89,13 +89,13 @@ export function TransactionsClient({ userId }: { userId: string }) {
   return (
     <div className="space-y-8">
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-lg font-semibold mb-4">Add Transaction</h2>
+        <h2 className="text-lg font-semibold mb-4">إضافة معاملة</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Type Toggle */}
           <div>
             <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
-              Transaction Type
+              نوع المعاملة
             </label>
             <div className="inline-flex rounded-lg border border-zinc-200 p-1 dark:border-zinc-800 dark:bg-zinc-900">
               {TRANSACTION_TYPES.map((t) => {
@@ -129,7 +129,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 htmlFor="tx-amount"
                 className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
               >
-                Amount (EGP)
+                المبلغ (ج.م)
               </label>
               <input
                 id="tx-amount"
@@ -155,7 +155,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 htmlFor="tx-account"
                 className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
               >
-                {type === "TRANSFER" ? "From Account" : "Account"}
+                {type === "TRANSFER" ? "From Account" : "الحساب"}
               </label>
               <select
                 id="tx-account"
@@ -172,7 +172,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                   ))
                 ) : (
                   <option value="" disabled>
-                    No accounts available
+                    لا توجد حسابات
                   </option>
                 )}
               </select>
@@ -185,7 +185,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                   htmlFor="tx-transfer-account"
                   className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
                 >
-                  To Account
+                  إلى حساب
                 </label>
                 <select
                   id="tx-transfer-account"
@@ -194,7 +194,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                   onChange={(e) => setTransferAccountId(e.target.value)}
                   className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm outline-none focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-200"
                 >
-                  <option value="">Select destination account...</option>
+                  <option value="">اختر حساب الوجهة...</option>
                   {accounts
                     ?.filter((acc) => acc.id !== activeAccountId)
                     .map((acc) => (
@@ -212,7 +212,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 htmlFor="tx-date"
                 className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
               >
-                Date
+                التاريخ
               </label>
               <input
                 id="tx-date"
@@ -230,7 +230,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 htmlFor="tx-bucket"
                 className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
               >
-                Bucket
+                الفئة
               </label>
               <select
                 id="tx-bucket"
@@ -254,7 +254,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 htmlFor="tx-description"
                 className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
               >
-                Description / Note (Optional)
+                الوصف / ملاحظة (اختياري)
               </label>
               <input
                 id="tx-description"
@@ -275,7 +275,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                 (type === "TRANSFER" && !transferAccountId)
               }
             >
-              {createMutation.isPending ? "Adding..." : "Add Transaction"}
+              {createMutation.isPending ? "Adding..." : "إضافة معاملة"}
             </Button>
           </div>
         </form>
@@ -289,7 +289,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
 
       {/* Transactions List */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Transactions History</h2>
+        <h2 className="text-lg font-semibold">سجل المعاملات</h2>
 
         {isLoading && (
           <div
@@ -405,7 +405,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                       {deleteMutation.isPending &&
                       deleteMutation.variables === tx.id
                         ? "Deleting..."
-                        : "Delete"}
+                        : "حذف"}
                     </Button>
                   </div>
                 </li>

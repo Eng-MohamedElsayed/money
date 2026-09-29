@@ -26,7 +26,7 @@ export default async function TransactionsPage() {
       <header className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
+            <h1 className="text-3xl font-bold tracking-tight">المعاملات</h1>
             <p className="text-zinc-500 dark:text-zinc-400">
               Record and review your income, expenses, and transfers.
             </p>

@@ -23,7 +23,7 @@ export default async function Home() {
   return (
     <div className="flex flex-col flex-1 p-8 max-w-4xl mx-auto w-full">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Money Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم المالية</h1>
         <p className="text-zinc-500 dark:text-zinc-400">
           Manage your accounts, balances, and track transactions.
         </p>

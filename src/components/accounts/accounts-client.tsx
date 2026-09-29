@@ -64,11 +64,11 @@ export function AccountsClient({ userId }: { userId: string }) {
   return (
     <div className="space-y-8">
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-lg font-semibold mb-4">Add Account</h2>
+        <h2 className="text-lg font-semibold mb-4">إضافة حساب</h2>
         <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="account-name" className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-              Account Name
+              اسم الحساب
             </label>
             <input
               id="account-name"
@@ -84,7 +84,7 @@ export function AccountsClient({ userId }: { userId: string }) {
 
           <div className="w-[160px]">
             <label htmlFor="account-type" className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-              Type
+              النوع
             </label>
             <select
               id="account-type"
@@ -102,7 +102,7 @@ export function AccountsClient({ userId }: { userId: string }) {
 
           <div className="w-[160px]">
             <label htmlFor="account-balance" className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-              Initial Balance (Minor)
+              الرصيد الافتتاحي (بالقروش)
             </label>
             <input
               id="account-balance"
@@ -118,7 +118,7 @@ export function AccountsClient({ userId }: { userId: string }) {
             type="submit"
             disabled={createMutation.isPending || !name.trim()}
           >
-            {createMutation.isPending ? "Adding..." : "Add Account"}
+            {createMutation.isPending ? "Adding..." : "إضافة حساب"}
           </Button>
         </form>
 
@@ -130,7 +130,7 @@ export function AccountsClient({ userId }: { userId: string }) {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Your Accounts</h2>
+        <h2 className="text-lg font-semibold">حساباتك</h2>
 
         {isLoading && (
           <div data-testid="loading-state" className="rounded-xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -173,7 +173,7 @@ export function AccountsClient({ userId }: { userId: string }) {
                 >
                   {deleteMutation.isPending && deleteMutation.variables === account.id
                     ? "Deleting..."
-                    : "Delete"}
+                    : "حذف"}
                 </Button>
               </li>
             ))}

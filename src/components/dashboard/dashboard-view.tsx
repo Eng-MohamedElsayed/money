@@ -17,7 +17,7 @@ export function DashboardView({ userId }: { userId: string }) {
               type="button"
               className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800"
             >
-              Sign in
+              تسجيل الدخول
             </button>
           </SignInButton>
           <SignUpButton mode="modal">
@@ -25,7 +25,7 @@ export function DashboardView({ userId }: { userId: string }) {
               type="button"
               className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors dark:bg-zinc-100 dark:text-zinc-900"
             >
-              Sign up
+              إنشاء حساب
             </button>
           </SignUpButton>
         </Show>
@@ -44,7 +44,7 @@ export function DashboardView({ userId }: { userId: string }) {
               : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
         >
-          All
+          الكل
         </button>
         <button
           type="button"
@@ -55,7 +55,7 @@ export function DashboardView({ userId }: { userId: string }) {
               : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
         >
-          Accounts
+          الحسابات
         </button>
         <button
           type="button"
@@ -66,7 +66,7 @@ export function DashboardView({ userId }: { userId: string }) {
               : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
         >
-          Transactions
+          المعاملات
         </button>
       </div>
 
@@ -75,7 +75,7 @@ export function DashboardView({ userId }: { userId: string }) {
         <section className="space-y-4">
           {activeTab === "all" && (
             <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Accounts
+              الحسابات
             </h2>
           )}
           <AccountsClient userId={userId} />
@@ -90,7 +90,7 @@ export function DashboardView({ userId }: { userId: string }) {
         <section className="space-y-4">
           {activeTab === "all" && (
             <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Transactions
+              المعاملات
             </h2>
           )}
           <TransactionsClient userId={userId} />

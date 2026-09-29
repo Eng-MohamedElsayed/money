@@ -69,14 +69,25 @@ export function maxMoney(a: Money, b: Money): Money {
   return makeMoney(Math.max(a, b));
 }
 
-/** Human display: "3,500 EGP". Currency is a runtime value, never hard-coded. */
+const APP_LOCALE = "ar-EG-u-nu-latn";
+
+/** Human display: "5,000 ج.م.". Currency is a runtime value, never hard-coded. */
 export function formatMoney(minor: Money, currency: string): string {
-  return `${formatDecimal(fromMinor(minor))} ${currency}`;
+  try {
+    return new Intl.NumberFormat(APP_LOCALE, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(fromMinor(minor));
+  } catch {
+    return `${formatDecimal(fromMinor(minor))} ${currency}`;
+  }
 }
 
 /** Numeric-only formatting (no currency) for compound labels. */
 export function formatDecimal(value: number, { decimals = 2 } = {}): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(APP_LOCALE, {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals,
   }).format(value);
