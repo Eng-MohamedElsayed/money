@@ -6,34 +6,33 @@ import {
   useBudget,
   useCreateIncome,
   useDeleteIncome,
+  useResetRuleProfile,
+  useRuleProfile,
+  useSaveRuleProfile,
   type BudgetBucketView,
 } from "@/lib/hooks/use-budget";
 
 const BUCKET_META: Record<
   BudgetBucketView["bucket"],
-  { label: string; percent: number; accent: string; bar: string }
+  { label: string; accent: string; bar: string }
 > = {
   GROWTH: {
     label: "النمو",
-    percent: 25,
     accent: "text-emerald-600 dark:text-emerald-400",
     bar: "bg-emerald-500",
   },
   STABILITY: {
     label: "الاستقرار",
-    percent: 15,
     accent: "text-sky-600 dark:text-sky-400",
     bar: "bg-sky-500",
   },
   ESSENTIALS: {
     label: "الأساسيات",
-    percent: 50,
     accent: "text-amber-600 dark:text-amber-400",
     bar: "bg-amber-500",
   },
   REWARDS: {
     label: "المكافآت",
-    percent: 10,
     accent: "text-violet-600 dark:text-violet-400",
     bar: "bg-violet-500",
   },
@@ -65,9 +64,11 @@ function parseAmountToMinor(raw: string): number | null {
 function BucketCard({
   bucket,
   currency,
+  percent,
 }: {
   bucket: BudgetBucketView;
   currency: string;
+  percent: number;
 }) {
   const meta = BUCKET_META[bucket.bucket];
   const cappedPercent = Math.min(100, Math.max(0, bucket.percentUsed));
@@ -79,7 +80,7 @@ function BucketCard({
           {meta.label}
         </h3>
         <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-          {meta.percent}%
+          {percent}%
         </span>
       </div>
 
@@ -115,6 +116,160 @@ function BucketCard({
   );
 }
 
+
+const RULE_FIELDS = [
+  { key: "growthPercent", bucket: "GROWTH", label: "النمو" },
+  { key: "stabilityPercent", bucket: "STABILITY", label: "الاستقرار" },
+  { key: "essentialsPercent", bucket: "ESSENTIALS", label: "الأساسيات" },
+  { key: "rewardsPercent", bucket: "REWARDS", label: "المكافآت" },
+] as const;
+
+function RuleEditor({
+  userId,
+  month,
+  year,
+  isCustom,
+  profileName,
+}: {
+  userId: string;
+  month: number;
+  year: number;
+  isCustom: boolean;
+  profileName: string | null;
+}) {
+  const { data } = useRuleProfile(userId);
+  const saveRule = useSaveRuleProfile(userId, month, year);
+  const resetRule = useResetRuleProfile(userId, month, year);
+
+  const [draft, setDraft] = useState<Record<string, string> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const current = data?.rule;
+  const values = draft ?? {
+    growthPercent: String(current?.growthPercent ?? 25),
+    stabilityPercent: String(current?.stabilityPercent ?? 15),
+    essentialsPercent: String(current?.essentialsPercent ?? 50),
+    rewardsPercent: String(current?.rewardsPercent ?? 10),
+  };
+
+  const total = RULE_FIELDS.reduce((acc, field) => {
+    const parsed = Number(values[field.key]);
+    return acc + (Number.isFinite(parsed) ? parsed : 0);
+  }, 0);
+  const isValidTotal = total === 100;
+
+  function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed: Record<string, number> = {};
+    for (const field of RULE_FIELDS) {
+      const n = Number(values[field.key]);
+      if (!Number.isInteger(n) || n < 0 || n > 100) {
+        setError("كل نسبة يجب أن تكون رقمًا صحيحًا بين 0 و 100");
+        return;
+      }
+      parsed[field.key] = n;
+    }
+    if (total !== 100) {
+      setError(`مجموع النسب ${total}% — يجب أن يساوي 100%`);
+      return;
+    }
+    setError(null);
+    saveRule.mutate(
+      {
+        growthPercent: parsed.growthPercent,
+        stabilityPercent: parsed.stabilityPercent,
+        essentialsPercent: parsed.essentialsPercent,
+        rewardsPercent: parsed.rewardsPercent,
+        name: profileName ?? undefined,
+      },
+      { onSuccess: () => setDraft(null) },
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between p-4 text-sm font-medium text-zinc-900 dark:text-zinc-100"
+      >
+        <span>تخصيص نسب التوزيع</span>
+        <span className="text-xs font-normal text-zinc-500">
+          {isCustom ? (profileName ?? "قاعدة مخصصة") : "الافتراضي 25/15/50/10"}
+        </span>
+      </button>
+
+      {open ? (
+        <form onSubmit={handleSave} className="space-y-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="grid gap-3 sm:grid-cols-4">
+            {RULE_FIELDS.map((field) => (
+              <div key={field.key}>
+                <label className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  {field.label}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={values[field.key]}
+                  onChange={(e) =>
+                    setDraft({ ...values, [field.key]: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p
+              className={`text-xs ${
+                isValidTotal
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              المجموع: {total}% {isValidTotal ? "✓" : "(يجب أن يساوي 100%)"}
+            </p>
+            <div className="flex items-center gap-2">
+              {isCustom ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft(null);
+                    setError(null);
+                    resetRule.mutate();
+                  }}
+                  disabled={resetRule.isPending}
+                  className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-800 dark:hover:bg-zinc-800"
+                >
+                  استعادة الافتراضي
+                </button>
+              ) : null}
+              <button
+                type="submit"
+                disabled={saveRule.isPending || !isValidTotal}
+                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+              >
+                {saveRule.isPending ? "جارٍ الحفظ..." : "حفظ القاعدة"}
+              </button>
+            </div>
+          </div>
+
+          {error ? <p className="text-xs text-red-600 dark:text-red-400">{error}</p> : null}
+          {saveRule.isError ? (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {(saveRule.error as Error)?.message}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
 export function BudgetClient({ userId }: { userId: string }) {
   const now = useMemo(() => new Date(), []);
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -129,6 +284,13 @@ export function BudgetClient({ userId }: { userId: string }) {
 
   const snapshot = data?.snapshot;
   const currency = data?.currency ?? "EGP";
+  const rule = data?.rule;
+  const rulePercent = {
+    GROWTH: rule?.growthPercent ?? 25,
+    STABILITY: rule?.stabilityPercent ?? 15,
+    ESSENTIALS: rule?.essentialsPercent ?? 50,
+    REWARDS: rule?.rewardsPercent ?? 10,
+  };
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -202,6 +364,14 @@ export function BudgetClient({ userId }: { userId: string }) {
         ) : null}
       </div>
 
+      <RuleEditor
+        userId={userId}
+        month={month}
+        year={year}
+        isCustom={Boolean(data?.isCustomRule)}
+        profileName={data?.profileName ?? null}
+      />
+
       <form
         onSubmit={handleSubmit}
         className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
@@ -268,6 +438,7 @@ export function BudgetClient({ userId }: { userId: string }) {
                   key={bucket.bucket}
                   bucket={bucket}
                   currency={currency}
+                  percent={rulePercent[bucket.bucket]}
                 />
               ))}
             </div>

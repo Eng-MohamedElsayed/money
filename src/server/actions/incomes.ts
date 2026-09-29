@@ -4,10 +4,11 @@ import { updateTag } from "next/cache";
 import type { Prisma } from "../../generated/prisma/client";
 import { allocatePeriod, assertAllocationBalanced } from "../../domain/budget";
 import { makeMoney } from "../../domain/money";
-import { DEFAULT_RULE_PERCENTS } from "../../domain/rules";
+import type { MoneyRule } from "../../domain/rules";
 import { incomeInputSchema } from "../../lib/schemas/incomes";
 import { getCurrentUser } from "../auth";
 import { prisma } from "../db";
+import { resolveRule } from "../queries/rule-profile";
 
 /**
  * Recording income re-splits the WHOLE period, because BudgetAllocation is 1:1
@@ -18,6 +19,7 @@ async function reallocatePeriod(
   tx: Prisma.TransactionClient,
   periodId: string,
   currency: string,
+  rule: MoneyRule,
 ) {
   const incomes = await tx.income.findMany({
     where: { periodId },
@@ -26,7 +28,7 @@ async function reallocatePeriod(
 
   const allocation = allocatePeriod(
     incomes.map((i) => makeMoney(i.amountMinor)),
-    DEFAULT_RULE_PERCENTS,
+    rule,
   );
   assertAllocationBalanced(allocation);
 
@@ -59,6 +61,8 @@ export async function createIncomeAction(input: unknown) {
   const month = data.date.getUTCMonth() + 1;
   const year = data.date.getUTCFullYear();
 
+  const resolved = await resolveRule(user.id);
+
   const { income, allocation } = await prisma.$transaction(async (tx) => {
     const period = await tx.budgetPeriod.upsert({
       where: { userId_month_year: { userId: user.id, month, year } },
@@ -80,7 +84,7 @@ export async function createIncomeAction(input: unknown) {
       select: { id: true, amountMinor: true, source: true, date: true },
     });
 
-    const saved = await reallocatePeriod(tx, period.id, data.currency);
+    const saved = await reallocatePeriod(tx, period.id, data.currency, resolved.rule);
     return { income: created, allocation: saved };
   });
 
@@ -108,8 +112,9 @@ export async function deleteIncomeAction(id: string) {
         where: { periodId: existing.periodId },
       });
     } else {
+      const resolved = await resolveRule(user.id);
       await prisma.$transaction((tx) =>
-        reallocatePeriod(tx, existing.periodId!, "EGP"),
+        reallocatePeriod(tx, existing.periodId!, "EGP", resolved.rule),
       );
     }
   }

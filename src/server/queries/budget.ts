@@ -1,13 +1,10 @@
 import "server-only";
 import { buildBudgetSnapshot, type BudgetSnapshot } from "../../domain/budget";
 import { makeMoney, type Money } from "../../domain/money";
-import {
-  DEFAULT_RULE_PERCENTS,
-  allocateIncome,
-  type RuleBucket,
-} from "../../domain/rules";
+import { allocateIncome, type MoneyRule, type RuleBucket } from "../../domain/rules";
 import { qk } from "../../lib/query-keys";
 import { prisma } from "../db";
+import { resolveRule } from "./rule-profile";
 import { getCurrentUser } from "../auth";
 
 const FUNDED: RuleBucket[] = ["GROWTH", "STABILITY", "ESSENTIALS", "REWARDS"];
@@ -24,7 +21,9 @@ export interface BudgetQueryResult {
   month: number;
   year: number;
   currency: string;
-  rule: typeof DEFAULT_RULE_PERCENTS;
+  rule: MoneyRule;
+  isCustomRule: boolean;
+  profileName: string | null;
   incomes: {
     id: string;
     amountMinor: number;
@@ -93,7 +92,8 @@ export async function getBudget(month: number, year: number): Promise<BudgetQuer
     (acc, i) => makeMoney(acc + Math.round(i.amountMinor)),
     makeMoney(0),
   );
-  const allocation = allocateIncome(totalIncomeMinor, DEFAULT_RULE_PERCENTS);
+  const resolved = await resolveRule(user.id);
+  const allocation = allocateIncome(totalIncomeMinor, resolved.rule);
   const snapshot = buildBudgetSnapshot(allocation, spentByBucket);
 
   return {
@@ -101,8 +101,10 @@ export async function getBudget(month: number, year: number): Promise<BudgetQuer
     periodId: period?.id ?? null,
     month,
     year,
-    currency: incomes[0]?.currency ?? "EGP",
-    rule: DEFAULT_RULE_PERCENTS,
+    currency: incomes[0]?.currency ?? resolved.currency,
+    rule: resolved.rule,
+    isCustomRule: resolved.isCustom,
+    profileName: resolved.profileName,
     incomes: incomes.map((i) => ({
       id: i.id,
       amountMinor: Math.round(i.amountMinor),

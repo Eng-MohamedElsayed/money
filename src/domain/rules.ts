@@ -86,6 +86,102 @@ export interface MoneyRule {
   rewardsPercent: number;
 }
 
+export const RULE_PERCENT_TOTAL = 100;
+
+export function sumRulePercents(rule: MoneyRule): number {
+  return (
+    rule.growthPercent +
+    rule.stabilityPercent +
+    rule.essentialsPercent +
+    rule.rewardsPercent
+  );
+}
+
+/** Throw unless every percent is a non-negative integer summing to exactly 100. */
+export function assertValidRule(rule: MoneyRule): void {
+  for (const [key, value] of Object.entries(rule)) {
+    if (!Number.isInteger(value) || value < 0 || value > RULE_PERCENT_TOTAL) {
+      throw new Error(`${key} must be an integer between 0 and 100, got ${value}`);
+    }
+  }
+  const total = sumRulePercents(rule);
+  if (total !== RULE_PERCENT_TOTAL) {
+    throw new Error(`Percentages must sum to exactly 100, got ${total}`);
+  }
+}
+
+export function isValidRule(rule: MoneyRule): boolean {
+  try {
+    assertValidRule(rule);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export interface RuleResolution {
+  rule: MoneyRule;
+  isCustom: boolean;
+  currency: string;
+}
+
+/**
+ * Decide which rule to allocate with. A missing OR corrupt profile (percentages
+ * that do not sum to 100) falls back to the built-in default rather than
+ * throwing, so bad data can never block income recording.
+ */
+export function resolveRuleFromProfile(
+  profile:
+    | (Pick<
+        MoneyRuleProfile,
+        | "growthPercent"
+        | "stabilityPercent"
+        | "essentialsPercent"
+        | "rewardsPercent"
+        | "currency"
+      >
+      | null
+      | undefined),
+): RuleResolution {
+  if (profile) {
+    const candidate = {
+      growthPercent: profile.growthPercent,
+      stabilityPercent: profile.stabilityPercent,
+      essentialsPercent: profile.essentialsPercent,
+      rewardsPercent: profile.rewardsPercent,
+    };
+    if (isValidRule(candidate)) {
+      return {
+        rule: candidate,
+        isCustom: true,
+        currency: profile.currency,
+      };
+    }
+  }
+
+  return {
+    rule: { ...DEFAULT_RULE_PERCENTS },
+    isCustom: false,
+    currency: profile?.currency ?? "EGP",
+  };
+}
+
+/** Map a persisted profile row to the pure rule used by the allocator. */
+export function ruleFromProfile(profile: Pick<
+  MoneyRuleProfile,
+  "growthPercent" | "stabilityPercent" | "essentialsPercent" | "rewardsPercent"
+>): MoneyRule {
+  const rule: MoneyRule = {
+    growthPercent: profile.growthPercent,
+    stabilityPercent: profile.stabilityPercent,
+    essentialsPercent: profile.essentialsPercent,
+    rewardsPercent: profile.rewardsPercent,
+  };
+  assertValidRule(rule);
+  return rule;
+}
+
+
 /**
  * Compute how `income` should be split across the four funded buckets. Pure
  * integer arithmetic (largest-remainder): the four parts ALWAYS sum EXACTLY
@@ -95,6 +191,7 @@ export function allocateIncome(
   income: Money,
   rule: MoneyRule,
 ): IncomeAllocation {
+  assertValidRule(rule);
   if (income < 0) throw new Error(`income must be non-negative, got ${income}`);
   const parts: Record<RuleBucket, Money> = {
     GROWTH: percentageOf(income, rule.growthPercent),

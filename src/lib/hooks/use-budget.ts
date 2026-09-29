@@ -11,6 +11,11 @@ import {
 } from "../../server/actions/incomes";
 import { getBudgetAction } from "../../server/actions/budget-actions";
 import {
+  getRuleProfileAction,
+  resetRuleProfileAction,
+  saveRuleProfileAction,
+} from "../../server/actions/rules";
+import {
   incomeInputSchema,
   type IncomeInput,
 } from "../schemas/incomes";
@@ -37,6 +42,8 @@ export interface BudgetView {
     essentialsPercent: number;
     rewardsPercent: number;
   };
+  isCustomRule: boolean;
+  profileName: string | null;
   incomes: {
     id: string;
     amountMinor: number;
@@ -100,6 +107,8 @@ export function transformBudget(raw: any): BudgetView {
     },
     hasAllocation: Boolean(raw?.hasAllocation),
     unclassifiedMinor: Math.round(Number(raw?.unclassifiedMinor ?? 0)),
+    isCustomRule: Boolean(raw?.isCustomRule),
+    profileName: raw?.profileName ?? null,
   };
 }
 
@@ -133,6 +142,51 @@ export function useDeleteIncome(userId: string, month: number, year: number) {
   return useMutation({
     mutationFn: (id: string) => deleteIncomeAction(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.budget(userId, month, year) });
+    },
+  });
+}
+
+export function useRuleProfile(userId: string) {
+  return useQuery({
+    queryKey: ["rule-profile", userId] as const,
+    queryFn: async () => {
+      const res = await getRuleProfileAction();
+      return {
+        profileId: res.profileId,
+        profileName: res.profileName,
+        isCustom: res.isCustom,
+        rule: res.rule,
+      };
+    },
+  });
+}
+
+export interface RuleDraft {
+  growthPercent: number;
+  stabilityPercent: number;
+  essentialsPercent: number;
+  rewardsPercent: number;
+  name?: string;
+}
+
+export function useSaveRuleProfile(userId: string, month: number, year: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draft: RuleDraft) => saveRuleProfileAction(draft),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rule-profile", userId] });
+      queryClient.invalidateQueries({ queryKey: qk.budget(userId, month, year) });
+    },
+  });
+}
+
+export function useResetRuleProfile(userId: string, month: number, year: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => resetRuleProfileAction(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rule-profile", userId] });
       queryClient.invalidateQueries({ queryKey: qk.budget(userId, month, year) });
     },
   });
