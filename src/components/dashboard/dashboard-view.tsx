@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { AccountsClient } from "@/components/accounts/accounts-client";
 import { TransactionsClient } from "@/components/transactions/transactions-client";
 
@@ -9,6 +10,29 @@ export function DashboardView({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-end gap-3">
+        <Show when="signed-out">
+          <SignInButton mode="modal">
+            <button
+              type="button"
+              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800"
+            >
+              Sign in
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button
+              type="button"
+              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors dark:bg-zinc-100 dark:text-zinc-900"
+            >
+              Sign up
+            </button>
+          </SignUpButton>
+        </Show>
+        <Show when="signed-in">
+          <UserButton />
+        </Show>
+      </div>
       {/* Navigation tabs */}
       <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         <button
