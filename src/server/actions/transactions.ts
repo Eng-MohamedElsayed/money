@@ -5,10 +5,28 @@ import { prisma } from "../db";
 import { getCurrentUser } from "../auth";
 import { getTransactions } from "../queries/transactions";
 import { transactionInputSchema } from "../../lib/schemas/transactions";
+import { deriveBucket, type ClassifiableBucket } from "../../domain/categories";
 
 export async function createTransactionAction(input: unknown) {
   const data = transactionInputSchema.parse(input);
   const user = await getCurrentUser();
+
+  // Ownership check: a category must belong to the caller before it can
+  // classify this transaction.
+  let categoryBucket: ClassifiableBucket | null = null;
+  if (data.categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: data.categoryId, userId: user.id },
+      select: { defaultBucket: true },
+    });
+    if (!category) throw new Error("التصنيف غير موجود");
+    categoryBucket = category.defaultBucket;
+  }
+
+  const bucket = deriveBucket({
+    explicit: data.bucket ?? null,
+    categoryBucket,
+  });
 
   const flow = data.type === "INCOME" ? "IN" : "OUT";
   const transaction = await prisma.transaction.create({
@@ -21,7 +39,7 @@ export async function createTransactionAction(input: unknown) {
       date: data.date,
       categoryId: data.categoryId || null,
       transferAccountId: data.type === "TRANSFER" ? (data.transferAccountId || null) : null,
-      bucket: data.bucket ?? "UNCLASSIFIED",
+      bucket,
       description: data.description || null,
       merchant: data.merchant || null,
       note: data.note || null,

@@ -11,6 +11,7 @@ import {
   useSaveRuleProfile,
   type BudgetBucketView,
 } from "@/lib/hooks/use-budget";
+import { CategoryManager } from "@/components/budget/category-manager";
 
 const BUCKET_META: Record<
   BudgetBucketView["bucket"],
@@ -363,6 +364,8 @@ export function BudgetClient({ userId }: { userId: string }) {
           </div>
         ) : null}
       </div>
+
+      <CategoryManager userId={userId} />
 
       <RuleEditor
         userId={userId}

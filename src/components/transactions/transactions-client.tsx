@@ -10,6 +10,15 @@ import {
   type TransactionRow,
 } from "@/lib/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
+import { useCategories } from "@/lib/hooks/use-categories";
+
+const BUCKET_LABELS: Record<string, string> = {
+  UNCLASSIFIED: "بدون تصنيف",
+  ESSENTIALS: "الأساسيات",
+  GROWTH: "النمو",
+  STABILITY: "الاستقرار",
+  REWARDS: "المكافآت",
+};
 
 const TRANSACTION_TYPES = ["EXPENSE", "INCOME", "TRANSFER"] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -30,6 +39,8 @@ export function TransactionsClient({ userId }: { userId: string }) {
   const [transferAccountId, setTransferAccountId] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [bucket, setBucket] = useState<BucketType>("UNCLASSIFIED");
+  const [categoryId, setCategoryId] = useState("");
+  const { data: categories } = useCategories(userId);
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
 
@@ -68,7 +79,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
         amountMinor,
         accountId: activeAccountId,
         transferAccountId: type === "TRANSFER" ? transferAccountId : undefined,
-        categoryId: undefined,
+        categoryId: categoryId || undefined,
         bucket,
         description: description.trim() || undefined,
         date: new Date(date),
@@ -78,6 +89,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
           setAmountMajor("");
           setDescription("");
           setCategoryName("");
+          setCategoryId("");
           if (type === "TRANSFER") {
             setTransferAccountId("");
           }
@@ -224,6 +236,29 @@ export function TransactionsClient({ userId }: { userId: string }) {
               />
             </div>
 
+            {/* Category */}
+            <div>
+              <label
+                htmlFor="tx-category"
+                className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1"
+              >
+                التصنيف
+              </label>
+              <select
+                id="tx-category"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm outline-none focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-200"
+              >
+                <option value="">بدون تصنيف</option>
+                {(categories ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Bucket */}
             <div>
               <label
@@ -240,7 +275,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
               >
                 {BUCKETS.map((b) => (
                   <option key={b} value={b}>
-                    {b}
+                    {BUCKET_LABELS[b] ?? b}
                   </option>
                 ))}
               </select>
@@ -358,7 +393,7 @@ export function TransactionsClient({ userId }: { userId: string }) {
                         </span>
                         {tx.bucket && tx.bucket !== "UNCLASSIFIED" && (
                           <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-                            • {tx.bucket}
+                            • {BUCKET_LABELS[tx.bucket] ?? tx.bucket}
                           </span>
                         )}
                       </div>
