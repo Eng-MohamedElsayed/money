@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { prisma } from "../db";
 import { getCurrentUser } from "../auth";
 import { getTransactions } from "../queries/transactions";
@@ -29,6 +29,7 @@ export async function createTransactionAction(input: unknown) {
   });
 
   revalidateTag("transactions", "default");
+  updateTag("budget");
   return { ok: true as const, transaction };
 }
 
@@ -36,6 +37,7 @@ export async function deleteTransactionAction(id: string) {
   const user = await getCurrentUser();
   await prisma.transaction.deleteMany({ where: { id, userId: user.id } });
   revalidateTag("transactions", "default");
+  updateTag("budget");
   return { ok: true as const };
 }
 

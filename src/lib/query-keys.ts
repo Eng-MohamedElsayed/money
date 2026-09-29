@@ -12,4 +12,6 @@ export const qk = {
   stability: (userId: string) => ["stability-fund", userId] as const,
   periods: (userId: string, year?: number) => ["budget-periods", userId, year ?? null] as const,
   period: (userId: string, id: string) => ["budget-periods", userId, id] as const,
+  budget: (userId: string, month: number, year: number) =>
+    ["budget", userId, year, month] as const,
 };

@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { AccountsClient } from "@/components/accounts/accounts-client";
+import { BudgetClient } from "@/components/budget/budget-client";
 import { TransactionsClient } from "@/components/transactions/transactions-client";
 
 export function DashboardView({ userId }: { userId: string }) {
-  const [activeTab, setActiveTab] = useState<"all" | "accounts" | "transactions">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "accounts" | "transactions" | "budget">("all");
 
   return (
     <div className="space-y-8">
@@ -68,6 +69,17 @@ export function DashboardView({ userId }: { userId: string }) {
         >
           المعاملات
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("budget")}
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === "budget"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+              : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          }`}
+        >
+          الميزانية
+        </button>
       </div>
 
       {/* Content based on tab */}
@@ -96,6 +108,13 @@ export function DashboardView({ userId }: { userId: string }) {
           <TransactionsClient userId={userId} />
         </section>
       )}
+
+      {activeTab === "budget" && (
+        <section className="space-y-4">
+          <BudgetClient userId={userId} />
+        </section>
+      )}
     </div>
   );
 }
+
